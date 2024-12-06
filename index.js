@@ -22,6 +22,7 @@ const connectToDB = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
       serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 10000,
     });
     console.log("MongoDB connected successfully");
   } catch (error) {
