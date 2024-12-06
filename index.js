@@ -4,25 +4,27 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 
-// Load environment variables
+// Load environment variables from .env file
 dotenv.config();
 
-// Create Express app
 const app = express();
 
-// Middleware
+// Middleware to parse JSON requests
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
+
+// Enable Cross-Origin Resource Sharing (CORS)
 app.use(cors());
 
-// MongoDB connection
+// MongoDB connection setup with pooling
 const connectToDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 10000,
+      poolSize: 5, // MongoDB connection pool size
+      serverSelectionTimeoutMS: 5000, // Timeout for MongoDB server selection
+      connectTimeoutMS: 10000, // Timeout for establishing a connection
     });
     console.log("MongoDB connected successfully");
   } catch (error) {
@@ -32,63 +34,71 @@ const connectToDB = async () => {
 
 connectToDB();
 
-// User model
-const User = mongoose.model("User", {
-  name: String,
-  age: Number,
-  email: String,
-  phone: String,
+// Define a simple To-Do model for MongoDB
+const Todo = mongoose.model("Todo", {
+  title: String,
+  completed: Boolean,
 });
 
-// Routes
-app.post("/users", async (req, res) => {
+// Create - Add a new To-Do item
+app.post("/todos", async (req, res) => {
   try {
-    const { name, age, email, phone } = req.body;
-    const newUser = new User({ name, age, email, phone });
-    await newUser.save();
-    res.status(201).json(newUser);
+    const { title, completed } = req.body;
+    const newTodo = new Todo({ title, completed: false });
+    await newTodo.save();
+    res.status(201).json(newTodo);
   } catch (err) {
-    res.status(500).send("Error adding user");
+    console.error("Error adding To-Do item:", err);
+    res.status(500).send("Error adding To-Do item");
   }
 });
 
-app.get("/users", async (req, res) => {
+// Read - Get all To-Do items
+app.get("/todos", async (req, res) => {
   try {
-    const users = await User.find();
-    res.json(users);
+    const todos = await Todo.find();
+    res.json(todos);
   } catch (err) {
-    res.status(500).send("Error fetching users");
+    console.error("Error fetching To-Do items:", err);
+    res.status(500).send("Error fetching To-Do items");
   }
 });
 
-app.put("/users/:id", async (req, res) => {
+// Update - Update a To-Do item
+app.put("/todos/:id", async (req, res) => {
   try {
-    const { name, age, email, phone } = req.body;
-    const updatedUser = await User.findByIdAndUpdate(
+    const { title, completed } = req.body;
+    const updatedTodo = await Todo.findByIdAndUpdate(
       req.params.id,
-      { name, age, email, phone },
+      { title, completed },
       { new: true }
     );
-    if (!updatedUser) {
-      return res.status(404).send("User not found");
+    if (!updatedTodo) {
+      return res.status(404).send("To-Do item not found");
     }
-    res.json(updatedUser);
+    res.json(updatedTodo);
   } catch (err) {
-    res.status(500).send("Error updating user");
+    console.error("Error updating To-Do item:", err);
+    res.status(500).send("Error updating To-Do item");
   }
 });
 
-app.delete("/users/:id", async (req, res) => {
+// Delete - Remove a To-Do item by ID
+app.delete("/todos/:id", async (req, res) => {
   try {
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
-    if (!deletedUser) {
-      return res.status(404).send("User not found");
+    const deletedTodo = await Todo.findByIdAndDelete(req.params.id);
+    if (!deletedTodo) {
+      return res.status(404).send("To-Do item not found");
     }
-    res.json({ message: "User deleted successfully", deletedUser });
+    res.json({ message: "To-Do item deleted successfully", deletedTodo });
   } catch (err) {
-    res.status(500).send("Error deleting user");
+    console.error("Error deleting To-Do item:", err);
+    res.status(500).send("Error deleting To-Do item");
   }
 });
 
-// Export the app as a serverless function
-export default app;
+// Start the server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
