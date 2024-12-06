@@ -7,7 +7,7 @@ app.use(express.json());
 
 // Basic endpoint
 app.get('/', (req, res) => {
-    res.send('Hello, world!');
+    res.send('Hello, world! hi how are you');
 });
 
 // A POST endpoint for testing
