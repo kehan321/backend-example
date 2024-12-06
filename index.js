@@ -4,24 +4,24 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 
-// Load environment variables from .env file
+// Load environment variables
 dotenv.config();
 
+// Create Express app
 const app = express();
 
-// Middleware to parse JSON requests
+// Middleware
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
-
-// Enable Cross-Origin Resource Sharing (CORS)
 app.use(cors());
 
-// MongoDB connection setup
+// MongoDB connection
 const connectToDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
     });
     console.log("MongoDB connected successfully");
   } catch (error) {
@@ -31,7 +31,7 @@ const connectToDB = async () => {
 
 connectToDB();
 
-// Define a User model for MongoDB
+// User model
 const User = mongoose.model("User", {
   name: String,
   age: Number,
@@ -39,7 +39,7 @@ const User = mongoose.model("User", {
   phone: String,
 });
 
-// Create - Add a new user
+// Routes
 app.post("/users", async (req, res) => {
   try {
     const { name, age, email, phone } = req.body;
@@ -47,23 +47,19 @@ app.post("/users", async (req, res) => {
     await newUser.save();
     res.status(201).json(newUser);
   } catch (err) {
-    console.error("Error adding user:", err);
     res.status(500).send("Error adding user");
   }
 });
 
-// Read - Get all users
 app.get("/users", async (req, res) => {
   try {
     const users = await User.find();
     res.json(users);
   } catch (err) {
-    console.error("Error fetching users:", err);
     res.status(500).send("Error fetching users");
   }
 });
 
-// Update - Update a user's details
 app.put("/users/:id", async (req, res) => {
   try {
     const { name, age, email, phone } = req.body;
@@ -72,18 +68,15 @@ app.put("/users/:id", async (req, res) => {
       { name, age, email, phone },
       { new: true }
     );
-
     if (!updatedUser) {
       return res.status(404).send("User not found");
     }
     res.json(updatedUser);
   } catch (err) {
-    console.error("Error updating user:", err);
     res.status(500).send("Error updating user");
   }
 });
 
-// Delete - Remove a user by ID
 app.delete("/users/:id", async (req, res) => {
   try {
     const deletedUser = await User.findByIdAndDelete(req.params.id);
@@ -92,13 +85,9 @@ app.delete("/users/:id", async (req, res) => {
     }
     res.json({ message: "User deleted successfully", deletedUser });
   } catch (err) {
-    console.error("Error deleting user:", err);
     res.status(500).send("Error deleting user");
   }
 });
 
-// Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+// Export the app as a serverless function
+export default app;
