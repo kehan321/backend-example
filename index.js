@@ -18,19 +18,20 @@ app.use(cors());
 
 // MongoDB connection setup with pooling
 const connectToDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      poolSize: 5, // MongoDB connection pool size
-      serverSelectionTimeoutMS: 5000, // Timeout for MongoDB server selection
-      connectTimeoutMS: 10000, // Timeout for establishing a connection
-    });
-    console.log("MongoDB connected successfully");
-  } catch (error) {
-    console.error("Could not connect to MongoDB:", error);
-  }
-};
+    try {
+      await mongoose.connect(process.env.MONGO_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        poolSize: 5, // MongoDB connection pool size
+        serverSelectionTimeoutMS: 5000, // Timeout for MongoDB server selection
+        connectTimeoutMS: 10000, // Timeout for establishing a connection
+      });
+      console.log("MongoDB connected successfully");
+    } catch (error) {
+      console.error("Could not connect to MongoDB:", error);
+    }
+  };
+  
 
 connectToDB();
 
@@ -55,14 +56,20 @@ app.post("/todos", async (req, res) => {
 
 // Read - Get all To-Do items
 app.get("/todos", async (req, res) => {
-  try {
-    const todos = await Todo.find();
-    res.json(todos);
-  } catch (err) {
-    console.error("Error fetching To-Do items:", err);
-    res.status(500).send("Error fetching To-Do items");
-  }
-});
+    try {
+      const page = parseInt(req.query.page) || 1;  // Default to page 1
+      const limit = parseInt(req.query.limit) || 10; // Default to 10 results per page
+      const todos = await Todo.find()
+        .skip((page - 1) * limit)  // Skip the results of previous pages
+        .limit(limit);  // Limit the number of results per page
+  
+      res.json(todos);
+    } catch (err) {
+      console.error("Error fetching To-Do items:", err);
+      res.status(500).send("Error fetching To-Do items");
+    }
+  });
+  
 
 // Update - Update a To-Do item
 app.put("/todos/:id", async (req, res) => {
